@@ -65,7 +65,6 @@ hedgehog_rssac_rm_old_unique_source_data.sh: hedgehog_rssac_rm_old_unique_source
 	$(subst_DB_VERSION) < $(srcdir)/hedgehog_rssac_rm_old_unique_source_data.sh.in | $(subst_S_BIN) > hedgehog_rssac_rm_old_unique_source_data.sh
 	
 DDL_updates/000009_ddl_traffic_difference.sh: $(srcdir)/DDL_updates/000009_ddl_traffic_difference.sh.in Makefile
-	mkdir -p DDL_updates
 	$(subst_DB_VERSION) < $(srcdir)/DDL_updates/000009_ddl_traffic_difference.sh.in | $(subst_S_BIN) > DDL_updates/000009_ddl_traffic_difference.sh
 
 EXTRA_DIST = 	refile_and_grok.sh.in \

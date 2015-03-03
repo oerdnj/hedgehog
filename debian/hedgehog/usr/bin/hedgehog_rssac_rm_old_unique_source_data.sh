@@ -1,0 +1,118 @@
+#!/bin/bash
+# 
+# Copyright 2014 Internet Corporation for Assigned Names and Numbers.
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+#
+# Developed by Sinodun IT (www.sinodun.com)
+#
+
+# 
+# File:   hedgehog_rssac_rm_old_unique_source_data.sh
+#
+
+#TODO: Add option to select all servers or just one server
+
+eval $(/usr/bin/hedgehog_conf_read.pl)
+
+REQUIRED_API_VERSION=7
+DB_NAME=$hhconfig_database_name
+DEFAULT_DAY=`date --date="$(date +%Y-%m-15)" +%Y%m%d`
+NOW=`date --date="now" +%Y%m%d`
+FORCE_SUM_DEL=0
+DELETE_RAW=0
+
+if [ $DEFAULT_DAY -ge $NOW ] ; then
+	START=`date --date="$NOW - 2 month" +%Y-%m`
+else
+	START=`date --date="$NOW - 1 month" +%Y-%m`
+fi
+
+
+usage () {
+    echo
+    echo "Delete all the raw unique_source data in the database for a given month. All data older "
+    echo "than this is also deleted."
+    echo "This script is intended to be run monthly to free disk space on systems where the raw"
+    echo "unique sources data becomes unmanagably large."
+    echo
+    echo "Usage: $0 options"
+    echo
+    echo "Supported options:"
+    echo "  -s Month from which to delete all raw unique source data (default ${START}: format YYYY-MM)"
+    echo "       (default is 2 months ago when in the first half of the current month and"
+    echo "        1 month ago when in the second half of the current month)"
+    echo "  -h Show this help"
+}
+
+while getopts ":s:h" opt; do
+    case $opt in
+        s  ) START=$OPTARG ;;
+        h  ) usage
+             exit 1 ;;
+        \? ) usage
+             exit 1 ;;
+    esac
+done
+
+echo "`date`: $0 COMMENCED"
+USER=$(whoami)
+[ $USER != $hhconfig_database_owner ] && echo "Must be $hhconfig_database_owner to run this script" && exit 1
+
+DB_API_VERSION=`psql $DB_NAME -tc  "select version from dsc.version;"`
+[ $DB_API_VERSION != $REQUIRED_API_VERSION ] && echo "Error: Database API version incorrect." && exit 1
+
+# Validate the input date. Add day since (oddly) date won't parse just year and month
+if [ ! -z $START ] ; then
+	if [[ ! $START =~ ^[0-9]{4}-[0-1][0-9]$ ]] ; then
+			echo "Error: The start date is not in the required format of YYYY-MM" 
+			exit 1
+	fi
+	date "+%Y-%m-%d" --date="${START}-01" >/dev/null 2>&1
+	is_valid=$?
+	if [ ${is_valid} -ne 0 ] ; then
+		echo "Error: The start date is not valid" 
+		exit 1
+	fi
+	
+	START_FIRST=`date --date=$START-01 +%Y%m%d`
+	NOW_FIRST=`date --date="$NOW" +%Y%m01`
+	if [ $NOW_FIRST -le $START_FIRST ] ; then
+		echo "Error: The given month cannot be this month or in the future." 
+		exit 1
+	fi
+fi
+
+echo "Deleting unique_source data during and before ${START}" 
+
+SQ="'"
+UNIQUE_SOURCE_RAW_PLOT_NAME="unique_sources_raw"
+
+TABLE_NAMES=`psql $DB_NAME -tc "select tablename from pg_tables where schemaname='dsc' order by tablename" | grep $UNIQUE_SOURCE_RAW_PLOT_NAME`   
+
+START_TRUNC=`date --date="$START-01" +%Y%m%d `
+for TABLENAME in $TABLE_NAMES
+do
+	(( SIZE=${#TABLENAME}-7 ))
+	TMP_DATE=`echo ${TABLENAME:$SIZE} | sed -e 's/_/-/'`
+	TABLE_DATE=`date --date="$TMP_DATE-01" +%Y%m%d`
+	if [ $START_TRUNC -ge $TABLE_DATE ] ; then
+		echo "Deleting table $TABLENAME"
+		psql $DB_NAME -c "truncate $TABLENAME;"
+	fi
+done
+
+echo "`date`: $0 COMPLETED"
+exit 0

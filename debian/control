@@ -1,0 +1,16 @@
+Source: hedgehog
+Section: unknown
+Priority: optional
+Maintainer: John Dickinson <jad@sinodun.com>
+Build-Depends: debhelper (>= 9), autotools-dev, r-base-dev, libcairo2-dev, libxt-dev, libboost-all-dev, libtool, libpqxx-dev, apache2-prefork-dev
+Standards-Version: 3.9.5
+Homepage: http://dns-stats.org/
+#Vcs-Git: git://anonscm.debian.org/collab-maint/hedgehog.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/hedgehog.git;a=summary
+
+Package: hedgehog
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, r-base, r-base-core, r-cran-ggplot2, r-cran-dbi, r-cran-cairodevice, r-cran-reshape, r-cran-digest, postgresql, postgresql-client, postgresql-contrib, pgbouncer, apache2-mpm-prefork, libapache2-mod-r-base, libyaml-tiny-perl
+Description: Hedgehog is a visualisation tool for DNS
+ Hedgehog is a visualisation tool for DNS statistics that consumes data
+ acquired with the DSC collector.

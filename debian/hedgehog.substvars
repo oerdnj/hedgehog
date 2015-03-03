@@ -1,0 +1,4 @@
+perl:Depends=perl
+misc:Pre-Depends=multiarch-support
+shlibs:Depends=hedgehog, libboost-filesystem1.55.0, libboost-system1.55.0, libc6 (>= 2.14), libgcc1 (>= 1:4.1.1), libpqxx-4.0 (>= 4.0), libstdc++6 (>= 4.4.0)
+misc:Depends=
